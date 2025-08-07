@@ -1,141 +1,122 @@
 #!/bin/bash
 
-# ReconStorm v1.0 - Automated Recon Tool by HackOps
-# Author: Lucky (Cyber Ghost)
-# Platform: Kali Linux / Ubuntu
-# Language: Bash
+# ReconStorm v2 - Automated Reconnaissance Framework
+# Author: Lucky | HackOps
 # License: MIT
+# Tested on: Kali Linux / Ubuntu
 
-trap ctrl_c INT
-ctrl_c() {
-    echo -e "\n\n[!] Exiting ReconStorm..."
-    exit 1
-}
-
-# ====== Colors ======
-RED="\e[31m"
-GREEN="\e[32m"
-YELLOW="\e[33m"
-CYAN="\e[36m"
-RESET="\e[0m"
-
-# ====== Banner ======
+# ========== Banner ==========
 banner() {
     clear
-    echo -e "${CYAN}"
-    echo "@@@@@@@   @@@@@@@@   @@@@@@@   @@@@@@   @@@  @@@   @@@@@@   @@@@@@@  @@@@@@@    @@@@@@   @@@@@@@@@@"
-    echo "@@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@ @@@  @@@@@@@   @@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@@@@"
-    echo "@@!  @@@  @@!       !@@       @@!  @@@  @@!@!@@@  !@@         @@!    @@!  @@@  @@!  @@@  @@! @@! @@!"
-    echo "!@!  @!@  !@!       !@!       !@!  @!@  !@!!@!@!  !@!         !@!    !@!  @!@  !@!  @!@  !@! !@! !@!"
-    echo "@!@!!@!   @!!!:!    !@!       @!@  !@!  @!@ !!@!  !!@@!!      @!!    @!@!!@!   @!@  !@!  @!! !!@ @!@"
-    echo "!!@!@!    !!!!!:    !!!       !@!  !!!  !@!  !!!   !!@!!!     !!!    !!@!@!    !@!  !!!  !@!   ! !@!"
-    echo "!!: :!!   !!:       :!!       !!:  !!!  !!:  !!!       !:!    !!:    !!: :!!   !!:  !!!  !!:     !!:"
-    echo ":!:  !:!  :!:       :!:       :!:  !:!  :!:  !:!      !:!     :!:    :!:  !:!  :!:  !:!  :!:     :!:"
-    echo "::   :::   :: ::::   ::: :::  ::::: ::   ::   ::  :::: ::      ::    ::   :::  ::::: ::  :::     ::"
-    echo ":   : :  : :: ::    :: :: :   : :  :   ::    :   :: : :       :      :   : :   : :  :    :      :"
-    echo -e "${YELLOW}                             By HackOps | v1.0 ${RESET}"
-    echo
+    echo -e "\e[1;36m"
+    cat << "EOF"
+                                                                                                         
+@@@@@@@   @@@@@@@@   @@@@@@@   @@@@@@   @@@  @@@   @@@@@@   @@@@@@@  @@@@@@@    @@@@@@   @@@@@@@@@@      
+@@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@ @@@  @@@@@@@   @@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@@@@     
+@@!  @@@  @@!       !@@       @@!  @@@  @@!@!@@@  !@@         @@!    @@!  @@@  @@!  @@@  @@! @@! @@!     
+!@!  @!@  !@!       !@!       !@!  @!@  !@!!@!@!  !@!         !@!    !@!  @!@  !@!  @!@  !@! !@! !@!     
+@!@!!@!   @!!!:!    !@!       @!@  !@!  @!@ !!@!  !!@@!!      @!!    @!@!!@!   @!@  !@!  @!! !!@ @!@     
+!!@!@!    !!!!!:    !!!       !@!  !!!  !@!  !!!   !!@!!!     !!!    !!@!@!    !@!  !!!  !@!   ! !@!     
+!!: :!!   !!:       :!!       !!:  !!!  !!:  !!!       !:!    !!:    !!: :!!   !!:  !!!  !!:     !!:     
+:!:  !:!  :!:       :!:       :!:  !:!  :!:  !:!      !:!     :!:    :!:  !:!  :!:  !:!  :!:     :!:     
+::   :::   :: ::::   ::: :::  ::::: ::   ::   ::  :::: ::      ::    ::   :::  ::::: ::  :::     ::      
+ :   : :  : :: ::    :: :: :   : :  :   ::    :   :: : :       :      :   : :   : :  :    :      :       
+
+EOF
+    echo -e "\e[1;32m                  [+] Created by Lucky (Cyber Ghost) | HackOps Team\e[0m"
+    echo ""
 }
 
-# ====== Dependency Check ======
-check_dependencies() {
-    echo -e "${YELLOW}[*] Checking required tools...${RESET}"
-    deps=(curl jq whois dig nmap)
+# ========== Tool Installation ==========
+install_tools() {
+    echo -e "\n\e[1;33m[+] Checking and installing required tools...\e[0m"
 
-    missing=false
-    for dep in "${deps[@]}"; do
-        if ! command -v $dep >/dev/null 2>&1; then
-            echo -e "${RED}[!] Missing: $dep${RESET}"
-            missing=true
+    declare -a apt_tools=(nmap whois dnsutils whatweb theharvester tor proxychains jq git curl)
+    declare -a go_tools=(subfinder httpx amass)
+
+    for tool in "${apt_tools[@]}"; do
+        if ! command -v "$tool" &>/dev/null; then
+            echo -e "\e[34m[*] Installing $tool via apt...\e[0m"
+            sudo apt install -y "$tool" &>/dev/null
+        else
+            echo -e "\e[32m[✓] $tool already installed.\e[0m"
         fi
     done
 
-    if $missing; then
-        echo -e "\n${RED}[X] One or more required tools are missing. Install them and try again.${RESET}"
+    if ! command -v go &>/dev/null; then
+        echo -e "\e[31m[!] Go is not installed. Please install Golang to continue.\e[0m"
         exit 1
     fi
+
+    export PATH=$PATH:$(go env GOPATH)/bin
+
+    for gotool in "${go_tools[@]}"; do
+        if ! command -v "$gotool" &>/dev/null; then
+            echo -e "\e[34m[*] Installing $gotool via go...\e[0m"
+            go install github.com/projectdiscovery/"$gotool"/cmd/"$gotool"@latest
+        else
+            echo -e "\e[32m[✓] $gotool already installed.\e[0m"
+        fi
+    done
+
+    echo -e "\e[1;32m[+] All tools installed and ready!\e[0m"
 }
 
-# ====== Menu ======
-menu() {
-    echo -e "${GREEN}[1]${RESET} Start Tor"
-    echo -e "${GREEN}[2]${RESET} Subdomain Enumeration"
-    echo -e "${GREEN}[3]${RESET} WHOIS Lookup"
-    echo -e "${GREEN}[4]${RESET} DNS Records"
-    echo -e "${GREEN}[5]${RESET} HTTP Headers"
-    echo -e "${GREEN}[6]${RESET} Nmap Scan"
-    echo -e "${GREEN}[7]${RESET} Run All Recon"
-    echo -e "${GREEN}[0]${RESET} Exit"
+# ========== Recon Functions ==========
+start_recon() {
+    echo ""
+    read -p $'\e[1;36m[?] Enter Target Domain: \e[0m' domain
+
+    output_dir="reports/$domain"
+    mkdir -p "$output_dir"
+
+    echo -e "\n\e[1;33m[+] Running Subdomain Enumeration with Subfinder...\e[0m"
+    subfinder -d "$domain" -o "$output_dir/subfinder.txt"
+
+    echo -e "\n\e[1;33m[+] Running Passive Recon with Amass...\e[0m"
+    amass enum -passive -d "$domain" -o "$output_dir/amass.txt"
+
+    echo -e "\n\e[1;33m[+] Resolving Alive Hosts with Httpx...\e[0m"
+    cat "$output_dir/subfinder.txt" "$output_dir/amass.txt" | sort -u | httpx -silent -o "$output_dir/httpx_alive.txt"
+
+    echo -e "\n\e[1;33m[+] Running Nmap on Live Hosts...\e[0m"
+    nmap -iL "$output_dir/httpx_alive.txt" -T4 -Pn -oN "$output_dir/nmap.txt"
+
+    echo -e "\n\e[1;33m[+] Running Whois Lookup...\e[0m"
+    whois "$domain" > "$output_dir/whois.txt"
+
+    echo -e "\n\e[1;33m[+] Running WhatWeb for Tech Stack...\e[0m"
+    whatweb -i "$output_dir/httpx_alive.txt" > "$output_dir/whatweb.txt"
+
+    echo -e "\n\e[1;33m[+] Running theHarvester...\e[0m"
+    theHarvester -d "$domain" -b all -f "$output_dir/theharvester.html"
+
+    echo -e "\n\e[1;32m[✓] Recon Complete. Reports saved in: $output_dir\e[0m"
 }
 
-# ====== Execution Start ======
-banner
-check_dependencies
+# ========== Main Menu ==========
+main_menu() {
+    banner
+    PS3=$'\e[1;36mChoose an option: \e[0m'
+    options=("Install All Tools" "Start Recon" "Exit")
+    select opt in "${options[@]}"; do
+        case $opt in
+            "Install All Tools")
+                install_tools
+                ;;
+            "Start Recon")
+                start_recon
+                ;;
+            "Exit")
+                echo -e "\e[1;33m[!] Exiting ReconStorm. Stay stealthy.\e[0m"
+                exit 0
+                ;;
+            *)
+                echo -e "\e[1;31m[!] Invalid Option. Try again.\e[0m"
+                ;;
+        esac
+    done
+}
 
-read -p "Enter target domain (example.com): " target
-
-mkdir -p reports
-timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-outfile="reports/${target}-${timestamp}.txt"
-echo -e "[*] ReconStorm Report for: $target\nDate: $(date)\n" > "$outfile"
-
-while true; do
-    menu
-    echo
-    read -p "Choose an option: " choice
-
-    case $choice in
-        1)
-            echo -e "${YELLOW}[*] Starting Tor service...${RESET}"
-            sudo systemctl start tor && echo -e "${GREEN}[+] Tor started.${RESET}" || echo -e "${RED}[!] Failed to start Tor.${RESET}"
-            ;;
-        2)
-            echo -e "\n[+] Subdomain Enumeration:" | tee -a "$outfile"
-            curl -s "https://crt.sh/?q=%25.$target&output=json" | jq -r '.[].name_value' | sort -u | tee -a "$outfile"
-            ;;
-        3)
-            echo -e "\n[+] WHOIS Lookup:" | tee -a "$outfile"
-            whois $target | tee -a "$outfile"
-            ;;
-        4)
-            echo -e "\n[+] DNS Records:" | tee -a "$outfile"
-            dig $target any +noall +answer | tee -a "$outfile"
-            ;;
-        5)
-            echo -e "\n[+] HTTP Headers:" | tee -a "$outfile"
-            curl -I https://$target | tee -a "$outfile"
-            ;;
-        6)
-            echo -e "\n[+] Nmap Scan:" | tee -a "$outfile"
-            nmap -sC -sV -Pn $target | tee -a "$outfile"
-            ;;
-        7)
-            echo -e "\n[+] Running Full Recon...${RESET}" | tee -a "$outfile"
-
-            echo -e "\n[*] Subdomain Enumeration:" | tee -a "$outfile"
-            curl -s "https://crt.sh/?q=%25.$target&output=json" | jq -r '.[].name_value' | sort -u | tee -a "$outfile"
-
-            echo -e "\n[*] WHOIS Lookup:" | tee -a "$outfile"
-            whois $target | tee -a "$outfile"
-
-            echo -e "\n[*] DNS Records:" | tee -a "$outfile"
-            dig $target any +noall +answer | tee -a "$outfile"
-
-            echo -e "\n[*] HTTP Headers:" | tee -a "$outfile"
-            curl -I https://$target | tee -a "$outfile"
-
-            echo -e "\n[*] Nmap Scan:" | tee -a "$outfile"
-            nmap -sC -sV -Pn $target | tee -a "$outfile"
-
-            echo -e "\n[✓] Full Recon complete. Results saved in $outfile"
-            ;;
-        0)
-            echo -e "${GREEN}[+] Exiting. Report saved at $outfile${RESET}"
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}[!] Invalid option. Try again.${RESET}"
-            ;;
-    esac
-    echo
-done
+# ========== Start Script ==========
+main_menu
