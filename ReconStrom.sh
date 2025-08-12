@@ -24,6 +24,23 @@ BANNER='''
  :   : :  : :: ::    :: :: :   : :  :   ::    :   :: : :       :      :   : :   : :  :    :      :    
 '''
 
+#!/bin/bash
+
+usage() {
+    echo "Usage: $0 <target-domain>"
+    echo "Example: $0 example.com"
+    exit 1
+}
+
+if [ -z "$1" ]; then
+    echo "[!] Target required"
+    usage
+fi
+
+TARGET=$1
+echo "[+] Running Recon on $TARGET"
+
+
 log() { echo -e "[+] $*"; }
 err() { echo -e "[!] $*" >&2; }
 
