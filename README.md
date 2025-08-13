@@ -24,20 +24,8 @@
 
 ---
 
-## 📦 Requirements
 
-Make sure the following tools are installed:
-
-```bash
-nmap
-curl
-whois
-figlet
-toilet
-lolcat
-jq
-```
-# To Install in Termux 
+# To Install in Kali Linux
 ```bash
 git clone https://github.com/hackops-academy/ReconStrom
 cd ReconStrom
